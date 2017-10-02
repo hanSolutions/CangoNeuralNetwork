@@ -36,46 +36,61 @@ def get_train_val_data(path=None,
     # drop 'id' column from training set
     input_data.drop(const.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
 
+    dataset = input_data.values
+    num_rows = input_data.shape[0]
+    num_cols = input_data.shape[1]
 
     # shuffle
     if do_shuffle:
-        log.info("Shuffling data...")
-        input_data = shuffle(input_data)
+        log.info('Shuffling data...')
+        dataset = shuffle(dataset)
 
-    # Synthetic Minority Over-sampling
+    # labels one-hot
+    labels = dataset[:, num_cols - 1]
+    labels = flat_to_one_hot(labels, categorical=False)
+    dataset = np.delete(dataset, -1, axis=1)
+
+    # split train validation set
+    validation_size = int(num_rows * train_val_ratio)
+
+    log.info('Training data set: {}, Validation data set: {}'.format(
+             num_rows - validation_size,
+             validation_size))
+
+    validation_dataset = dataset[:validation_size]
+    validation_labels = labels[:validation_size]
+    log.debug('Validation label distribution: 0 - {}, 1 - {}'.format(
+        validation_labels.shape[0] - np.count_nonzero(validation_labels),
+        np.count_nonzero(validation_labels)))
+
+    train_dataset = dataset[validation_size:]
+    train_labels = labels[validation_size:]
+    log.debug('Training label distribution: 0 - {}, 1 - {}'.format(
+        train_labels.shape[0] - np.count_nonzero(train_labels),
+        np.count_nonzero(train_labels)))
+
+    # Synthetic Minority Over-sampling (SMOTE) only on train dataset
+    # https://www.jair.org/media/953/live-953-2037-jair.pdf
     if do_smote:
-        log.info("Data preprocess: SMOTE...")
-        mdf = pdml.ModelFrame(input_data.to_dict(orient='list'),
-                              target=input_data[const.DAT_COL_LABEL].values)
+        log.info('Processing SMOTE on training dataset..')
+        mdf = pdml.ModelFrame(train_dataset,
+                              target=train_labels)
 
         ratio = int(input_data.shape[0] * smote_min_ratio)
         ratio_dict = {1: ratio}
 
         sampler = mdf.imbalance.over_sampling.SMOTE(ratio_dict, random_state=123)
         sampled = mdf.fit_sample(sampler)
-        log.debug("Data preprocess: SMOTE result: total - {}, 0 - {}, 1 - {}".format(
+        log.debug('Train dataset SMOTE result: total - {}, 0 - {}, 1 - {}'.format(
             sampled.shape[0],
             sampled.target.value_counts()[0],
             sampled.target.value_counts()[1]
         ))
-        input_data = sampled
-        input_data.drop('.target', axis=1, inplace=True)
-
-    # labels one-hot
-    labels = input_data[const.DAT_COL_LABEL].values
-    labels = flat_to_one_hot(labels, categorical=True)
-    input_data.drop(const.DAT_COL_LABEL, axis=1, inplace=True)
-
-    # split train validation set
-    dataset = input_data.values
-    total = input_data.shape[0]
-    validation_size = int(total * train_val_ratio)
-
-    validation_dataset = dataset[:validation_size]
-    validation_labels = labels[:validation_size]
-
-    train_dataset = dataset[validation_size:]
-    train_labels = labels[validation_size:]
+        train_labels = sampled.target.values
+        sampled.drop('.target', axis=1, inplace=True)
+        train_dataset = sampled.values
+        # input_data = sampled
+        # input_data.drop('.target', axis=1, inplace=True)
 
     # reshape 1-D array to 2-D
     if do_reshape:
