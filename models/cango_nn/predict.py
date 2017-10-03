@@ -1,14 +1,16 @@
 import os, datetime
 import numpy as np
+import logging
 import datasets.cango as cango
 
-from utils import plots
+from utils import plots, metrics
 from common import logger, constants
 from keras.models import model_from_json
 
 log_dir_root = '../../logs'
 out_dir_root = '../../outputs'
 
+log = logging.getLogger(__name__)
 
 def get_model():
     # Load the model architecture
@@ -38,28 +40,38 @@ def init():
 if __name__ == '__main__':
     log_dir, out_dir = init()
 
-    (_, _), (x_test, y_test) = cango.get_train_val_data(
+    (x_train, y_train), (x_test, y_test) = cango.get_train_val_data(
         path='../../data/03_07_0_0_MaxMin/clean_raw_pboc.csv',
         train_val_ratio=0.3, do_shuffle=False, do_smote=False)
     model_nn = get_model()
 
-    y_pred = model_nn.predict(x_test)
-    dfd = np.argmax(y_pred, axis=1)
+    # y_pred = p(class(x)=1)
+    y_pred_test = model_nn.predict(x_test)
+    y_pred_test = y_pred_test.ravel()
+    proba_b_test = y_pred_test
+    ones = np.ones(proba_b_test.shape).ravel()
+    proba_g_test = ones - proba_b_test
+    y_pred_test_out = [1 if e > 0.5 else 0 for e in y_pred_test]
 
-    # t = roc_auc_score(y_test, y_pred)
-    # print(t)
-    # loss = K.mean(K.binary_crossentropy(y_test, y_pred), axis=-1)
-    # loss = np.mean(log_loss(y_test, y_pred))
-    # loss = np.mean(np.power(y_test - y_pred, 2), axis=1)
-    y_pred = y_pred.ravel()
+    y_pred_train = model_nn.predict(x_train)
+    y_pred_train = y_pred_train.ravel()
+    y_pred_train_out = [1 if e > 0.5 else 0 for e in y_pred_train]
 
-    # roc
-    plots.roc_auc(y_true=y_test, y_score=y_pred,
+    # KS test score
+    ks = metrics.ks_stat(proba_b_test, proba_g_test)
+    log.info('ks score: {}'.format(ks))
+
+    # PSI
+    psi = metrics.psi(y_pred_train_out, y_pred_test_out)
+    log.info('psi: {}'.format(psi))
+
+    # AUC ROC
+    auroc = metrics.auc_roc(y_true=y_test, y_score=y_pred_test)
+    log.info("auc_roc score: {}".format(auroc))
+    plots.roc_auc(y_true=y_test, y_score=y_pred_test,
                   to_file='{}/roc'.format(out_dir), show=True)
 
     # confusion matrix
-    threshold = 0.5
-    y_pred = [1 if e > threshold else 0 for e in y_pred]
-    plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred),
+    plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out ),
                            to_file='{}/confusion'.format(out_dir),
                            show=True)
