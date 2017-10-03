@@ -1,7 +1,9 @@
 import os, datetime
 import keras as ka
-import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
+from utils import plots
 from common import logger, constants
 from datasets import cango
 from keras.utils import plot_model
@@ -10,12 +12,13 @@ from models.cango_nn import model
 log_dir_root = '../../logs'
 out_dir_root = '../../outputs'
 
+
 def main():
     log_dir, out_dir = init()
 
     (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
-        path='../../data/03_07_0_0_Mean/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=True, do_smote=False, smote_min_ratio=0.3)
+        path='../../data/03_07_0_0_MaxMin/clean_raw_pboc.csv',
+        train_val_ratio=0.3, do_shuffle=True, do_smote=True, smote_min_ratio=0.9)
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/{}_epoches.log'.format(log_dir, constants.APP_CANGO_NN))
@@ -29,36 +32,33 @@ def main():
     early_stopping = ka.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=1, mode='auto')
 
     # Construct the model
-    model_nn = model.create_model()
+    input_dim = x_train.shape[1]
+    model_nn = model.create_model(input_dim)
 
     # Train the model
-    history = model_nn.fit(x_train, y_train, batch_size=100, nb_epoch=100,
-                        verbose=0, validation_data=(x_val, y_val),
+    history = model_nn.fit(x_train, y_train, batch_size=100, epochs=100,
+                        verbose=1, validation_data=(x_val, y_val),
                         callbacks=[checkpointer, csv_logger, early_stopping])
     score = model_nn.evaluate(x_val, y_val, verbose=0)
     print('Validation score:', score[0])
     print('Validation accuracy:', score[1])
 
     # summarize history for accuracy
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('{}/plt_acc'.format(out_dir))
-    plt.show()
+    plots.train_val_acc(train_acc=history.history['acc'],
+                        val_acc=history.history['val_acc'],
+                        to_file='{}/plt_acc'.format(out_dir),
+                        show=True)
 
     # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('{}/plt_loss'.format(out_dir))
-    plt.show()
+    plots.train_val_loss(train_loss=history.history['loss'],
+                         val_loss=history.history['val_loss'],
+                         to_file='{}/plt_loss'.format(out_dir),
+                         show=True)
 
+    predictions = model_nn.predict(x_val)
+    mse = np.mean(np.power(x_val - predictions, 2), axis=1)
+    error_df = pd.DataFrame({'reconstruction_error': mse,
+                             'true_class': y_val})
 
     # Save the model
     json_string = model_nn.to_json()
