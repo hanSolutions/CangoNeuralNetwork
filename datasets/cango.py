@@ -95,9 +95,14 @@ def get_train_val_data(path=None,
     # reshape 1-D array to 2-D
     if do_reshape:
         # resize ndarray(*, 93) to ndarray(*, 100) with zero padding
-        resize_td = np.resize(train_dataset, (train_dataset.shape[0], 100))
-        train_dataset = resize_td.reshape(resize_td.shape[0], 1, 10, 10)
-        resize_vd = np.resize(validation_dataset, (validation_dataset.shape[0], 100))
-        validation_dataset = resize_vd.reshape(resize_vd.shape[0], 1, 10, 10)
+
+        d = reshape_size[0]
+        w = reshape_size[1]
+        l = reshape_size[2]
+
+        resize_td = np.resize(train_dataset, (train_dataset.shape[0], d * w * l))
+        train_dataset = resize_td.reshape(resize_td.shape[0], d, w, l)
+        resize_vd = np.resize(validation_dataset, (validation_dataset.shape[0], d * w * l))
+        validation_dataset = resize_vd.reshape(resize_vd.shape[0], d, w, l)
 
     return (train_dataset, train_labels), (validation_dataset, validation_labels)
