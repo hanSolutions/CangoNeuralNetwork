@@ -17,8 +17,8 @@ def main():
     log_dir, out_dir = init()
 
     (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
-        path='../../data/03_07_0_0_MaxMin/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=True, do_smote=True, smote_min_ratio=0.9)
+        path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
+        train_val_ratio=0.3, do_shuffle=True, do_smote=True, smote_min_ratio=0.7)
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/{}_epoches.log'.format(log_dir, constants.APP_CANGO_NN))

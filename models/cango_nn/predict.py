@@ -41,8 +41,8 @@ if __name__ == '__main__':
     log_dir, out_dir = init()
 
     (x_train, y_train), (x_test, y_test) = cango.get_train_val_data(
-        path='../../data/03_07_0_0_MaxMin/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=False, do_smote=False)
+        path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
+        train_val_ratio=0.8, do_shuffle=False, do_smote=False)
     model_nn = get_model()
 
     # y_pred = p(class(x)=1)
