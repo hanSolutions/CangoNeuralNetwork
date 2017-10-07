@@ -39,6 +39,8 @@ def psi(expected, actual):
     :param actual: 1D array, elements are either 0 or 1
     :return: float, Population Stability Index (PSI)
     '''
+    eps = np.finfo(float).eps
+
     exp_len = len(expected)
     act_len = len(actual)
 
@@ -48,13 +50,13 @@ def psi(expected, actual):
     nb_act = np.count_nonzero(actual)
     ng_act = act_len - nb_act
 
-    ratio_g_exp = ng_exp / exp_len
-    ratio_b_exp = nb_exp / exp_len
+    ratio_g_exp = ng_exp / exp_len + eps
+    ratio_b_exp = nb_exp / exp_len + eps
     ratio_g_act = ng_act / act_len
     ratio_b_act = nb_act / act_len
 
-    g = (ratio_g_act - ratio_g_exp) * np.log(ratio_g_act / ratio_g_exp)
-    b = (ratio_b_act - ratio_b_exp) * np.log(ratio_b_act / ratio_b_exp)
+    g = (ratio_g_act - ratio_g_exp) * np.log((ratio_g_act / ratio_g_exp) + eps)
+    b = (ratio_b_act - ratio_b_exp) * np.log((ratio_b_act / ratio_b_exp) + eps)
 
     return g + b
 
