@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pandas_ml as pdml
-import common.constants as const
+import common.constants as c
 
 from keras.utils import np_utils
 from sklearn.preprocessing import LabelEncoder
@@ -34,7 +34,7 @@ def get_train_val_data(path=None,
     input_data = pd.read_csv(path)
 
     # drop 'id' column from training set
-    input_data.drop(const.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
+    input_data.drop(c.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
 
     dataset = input_data.values
     num_rows = input_data.shape[0]
@@ -79,7 +79,7 @@ def get_train_val_data(path=None,
         ratio = int(input_data.shape[0] * smote_min_ratio)
         ratio_dict = {1: ratio}
 
-        sampler = mdf.imbalance.over_sampling.SMOTE(ratio_dict, random_state=123)
+        sampler = mdf.imbalance.over_sampling.SMOTE(ratio_dict, random_state=c.random_seed)
         sampled = mdf.fit_sample(sampler)
         log.debug('Train dataset SMOTE result: total - {}, 0 - {}, 1 - {}'.format(
             sampled.shape[0],
@@ -106,3 +106,46 @@ def get_train_val_data(path=None,
         validation_dataset = resize_vd.reshape(resize_vd.shape[0], d, w, l)
 
     return (train_dataset, train_labels), (validation_dataset, validation_labels)
+
+
+
+def get_test_data(path=None,
+                       do_shuffle=False,
+                       do_reshape=False,
+                       reshape_size=[1, 25, 25]):
+    if path is None:
+        raise ValueError('Undefined input file path')
+
+    log.info("Loading data from '{}'".format(path))
+    input_data = pd.read_csv(path)
+
+    # drop 'id' column from training set
+    input_data.drop(c.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
+
+    dataset = input_data.values
+    num_rows = input_data.shape[0]
+    num_cols = input_data.shape[1]
+    log.debug('total numbers of test data: {}'.format(num_rows))
+
+    # shuffle
+    if do_shuffle:
+        log.info('Shuffling data...')
+        dataset = shuffle(dataset)
+
+    # labels one-hot
+    labels = dataset[:, num_cols - 1]
+    labels = flat_to_one_hot(labels, categorical=False)
+    dataset = np.delete(dataset, -1, axis=1)
+
+    # reshape 1-D array to 2-D
+    if do_reshape:
+        # resize ndarray(*, 93) to ndarray(*, 100) with zero padding
+
+        d = reshape_size[0]
+        w = reshape_size[1]
+        l = reshape_size[2]
+
+        resize_td = np.resize(dataset, (dataset.shape[0], d * w * l))
+        dataset = resize_td.reshape(resize_td.shape[0], d, w, l)
+
+    return (dataset, labels)
