@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import datasets.cango as cango
 
-from utils import plots, metrics
+from utils import plots, metrics, sampling
 from common import logger, constants
 from keras.models import model_from_json
 
@@ -16,7 +16,7 @@ def get_model():
     # Load the model architecture
     model = model_from_json(open('../../outputs/cango_nn/model_architecture.json').read())
     # Load the model weights
-    model.load_weights('../../outputs/cango_nn/cango_nn_weights.hdf5')
+    model.load_weights('../../outputs/cango_nn/cango_nn_weights.h5')
     return model
 
 
@@ -37,25 +37,49 @@ def init():
     return log_dir, out_dir
 
 
+
+
+
 if __name__ == '__main__':
+
     log_dir, out_dir = init()
 
-    (x_train, y_train), (x_test, y_test) = cango.get_train_val_data(
+    (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
         path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
-        train_val_ratio=0.8, do_shuffle=False, do_smote=False)
+        train_val_ratio=0.3, do_shuffle=False, do_smote=False)
+
+    x_test, y_test = cango.get_test_data(
+        path='../../data/03_07_0_0_MaxMin01/clean_test_pboc.csv')
+
     model_nn = get_model()
 
     # y_pred = p(class(x)=1)
     y_pred_test = model_nn.predict(x_test)
     y_pred_test = y_pred_test.ravel()
     proba_b_test = y_pred_test
+    proba_b_test = sampling.undo_oversampling(proba_b_test, 0.024, 0.2)
     ones = np.ones(proba_b_test.shape).ravel()
     proba_g_test = ones - proba_b_test
     y_pred_test_out = [1 if e > 0.5 else 0 for e in y_pred_test]
+    y_pred_test_1 = np.count_nonzero(y_pred_test_out)
+    y_pred_test_0 = len(y_pred_test_out) - y_pred_test_1
+
+    # y_pred_test_1 = undo_oversampling(y_pred_test_1, 0.036, 0.2)
+
+    log.debug('predict test dataset distribution: 0 - {}, 1 - {}'.format(
+        y_pred_test_0, y_pred_test_1
+    ))
 
     y_pred_train = model_nn.predict(x_train)
     y_pred_train = y_pred_train.ravel()
+    y_pred_train = sampling.undo_oversampling(y_pred_train, 0.024, 0.2)
     y_pred_train_out = [1 if e > 0.5 else 0 for e in y_pred_train]
+    y_pred_train_1 = np.count_nonzero(y_pred_train_out)
+    y_pred_train_0 = len(y_pred_train_out) - y_pred_train_1
+
+    log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
+        y_pred_train_0, y_pred_train_1
+    ))
 
     # KS test score
     ks = metrics.ks_stat(proba_b_test, proba_g_test)
@@ -72,6 +96,6 @@ if __name__ == '__main__':
                   to_file='{}/roc'.format(out_dir), show=True)
 
     # confusion matrix
-    plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out ),
+    plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out),
                            to_file='{}/confusion'.format(out_dir),
                            show=True)

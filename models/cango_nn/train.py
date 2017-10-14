@@ -18,13 +18,13 @@ def main():
 
     (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
         path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=True, do_smote=True, smote_min_ratio=0.7)
+        train_val_ratio=0.3, do_shuffle=False, do_smote=True, smote_min_ratio=0.3)
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/{}_epoches.log'.format(log_dir, constants.APP_CANGO_NN))
 
     # checkpoint weight after each epoch if the validation loss decreased
-    checkpointer = ka.callbacks.ModelCheckpoint(filepath='{}/{}_weights.hdf5'.format(out_dir, constants.APP_CANGO_NN),
+    checkpointer = ka.callbacks.ModelCheckpoint(filepath='{}/{}_weights.h5'.format(out_dir, constants.APP_CANGO_NN),
                                                 verbose=1,
                                                 save_best_only=True)
 
@@ -36,8 +36,14 @@ def main():
     model_nn = model.create_model(input_dim)
 
     # Train the model
+    class_weight = {
+        0: 1.0,
+        1: 5.0
+    }
     history = model_nn.fit(x_train, y_train, batch_size=100, epochs=100,
+                           # shuffle=True,
                         verbose=1, validation_data=(x_val, y_val),
+                        # class_weight=class_weight,
                         callbacks=[checkpointer, csv_logger, early_stopping])
     score = model_nn.evaluate(x_val, y_val, verbose=0)
     print('Validation score:', score[0])
@@ -61,6 +67,7 @@ def main():
                              'true_class': y_val})
 
     # Save the model
+    # model_nn.save_weights(filepath='{}/{}_weights.h5'.format(out_dir, constants.APP_CANGO_NN))
     json_string = model_nn.to_json()
     open('{}/model_architecture.json'.format(out_dir), 'w').write(json_string)
     plot_model(model_nn, to_file='{}/model.png'.format(out_dir))
