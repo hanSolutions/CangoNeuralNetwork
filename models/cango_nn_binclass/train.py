@@ -5,20 +5,20 @@ import pandas as pd
 
 from utils import plots
 from common import logger, constants
-from datasets import cango
+from datasets import cango_pboc
 from keras.utils import plot_model
-from models.cango_nn import model
+from models.cango_nn_binclass import model
 
 log_dir_root = '../../logs'
 out_dir_root = '../../outputs'
 
 
 def main():
-    log_dir, out_dir = init()
+    log_dir, out_dir = init_outputs()
 
-    (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
+    (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
         path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=False, do_smote=True, smote_min_ratio=0.3)
+        train_val_ratio=0.5, do_shuffle=False, do_smote=True, smote_ratio=0.5)
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/{}_epoches.log'.format(log_dir, constants.APP_CANGO_NN))
@@ -38,12 +38,12 @@ def main():
     # Train the model
     class_weight = {
         0: 1.0,
-        1: 5.0
+        1: 1.0
     }
     history = model_nn.fit(x_train, y_train, batch_size=100, epochs=100,
                            # shuffle=True,
-                        verbose=1, validation_data=(x_val, y_val),
-                        # class_weight=class_weight,
+                        verbose=0, validation_data=(x_val, y_val),
+                        class_weight=class_weight,
                         callbacks=[checkpointer, csv_logger, early_stopping])
     score = model_nn.evaluate(x_val, y_val, verbose=0)
     print('Validation score:', score[0])
@@ -73,7 +73,7 @@ def main():
     plot_model(model_nn, to_file='{}/model.png'.format(out_dir))
 
 
-def init():
+def init_outputs():
     dtstr = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
     log_dir = os.path.join(log_dir_root,
                            "{}_{}".format(constants.APP_CANGO_NN, dtstr))

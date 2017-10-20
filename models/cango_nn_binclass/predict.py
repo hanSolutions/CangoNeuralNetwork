@@ -1,7 +1,7 @@
 import os, datetime
 import numpy as np
 import logging
-import datasets.cango as cango
+import datasets.cango_pboc as cango
 
 from utils import plots, metrics, sampling
 from common import logger, constants
@@ -12,11 +12,12 @@ out_dir_root = '../../outputs'
 
 log = logging.getLogger(__name__)
 
+
 def get_model():
     # Load the model architecture
-    model = model_from_json(open('../../outputs/cango_nn/model_architecture.json').read())
+    model = model_from_json(open('../../outputs/cango_nn_binclass/model_architecture.json').read())
     # Load the model weights
-    model.load_weights('../../outputs/cango_nn/cango_nn_weights.h5')
+    model.load_weights('../../outputs/cango_nn_binclass/cango_nn_binclass_weights.h5')
     return model
 
 
@@ -35,9 +36,6 @@ def init():
     logger.init_log('DEBUG')
 
     return log_dir, out_dir
-
-
-
 
 
 if __name__ == '__main__':
@@ -95,7 +93,16 @@ if __name__ == '__main__':
     plots.roc_auc(y_true=y_test, y_score=y_pred_test,
                   to_file='{}/roc'.format(out_dir), show=True)
 
+    auroc1 = metrics.auc_roc(y_true=y_train, y_score=y_pred_train)
+    log.info("auc_roc score: {}".format(auroc1))
+    plots.roc_auc(y_true=y_train, y_score=y_pred_train,
+                  to_file='{}/roc1'.format(out_dir), show=True)
+
     # confusion matrix
     plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out),
                            to_file='{}/confusion'.format(out_dir),
+                           show=True)
+
+    plots.confusion_matrix(y_true=y_train, y_pred=np.asarray(y_pred_train_out),
+                           to_file='{}/confusion1'.format(out_dir),
                            show=True)

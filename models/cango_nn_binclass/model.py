@@ -9,8 +9,9 @@ import common.constants as c
 
 
 def create_model(input_dimension,
-                 regularization_val=0.00001,
-                 gaussian_noise_val=0.5,
+                 regularization_val=0.0001,
+                 # dropout_val=0.5,
+                 gaussian_noise_val=0.0,
                  learning_rate=0.0001
                  ):
 
@@ -25,7 +26,7 @@ def create_model(input_dimension,
     model.add(LeakyReLU())
     # model.add(Dropout(dropout_val))
 
-    model.add(GaussianNoise(gaussian_noise_val))
+    # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(256,
                     kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
                     bias_initializer='zero',
@@ -35,7 +36,7 @@ def create_model(input_dimension,
     model.add(LeakyReLU())
     # model.add(Dropout(dropout_val))
 
-    model.add(GaussianNoise(gaussian_noise_val))
+    # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(128,
                     kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
                     bias_initializer='zero',
@@ -45,7 +46,7 @@ def create_model(input_dimension,
     model.add(LeakyReLU())
     # model.add(Dropout(dropout_val))
 
-    model.add(GaussianNoise(gaussian_noise_val))
+    # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(64,
                     kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
                     bias_initializer='zero',
@@ -55,7 +56,7 @@ def create_model(input_dimension,
     model.add(LeakyReLU())
     # model.add(Dropout(dropout_val))
 
-    model.add(GaussianNoise(gaussian_noise_val))
+    # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(32,
                     kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
                     bias_initializer='zero',
