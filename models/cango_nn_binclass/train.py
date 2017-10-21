@@ -1,50 +1,57 @@
-import os, datetime
+import sys
 import keras as ka
-import numpy as np
-import pandas as pd
 
 from utils import plots
-from common import logger, constants
+from common import logger, constants, config
 from datasets import cango_pboc
 from keras.utils import plot_model
 from models.cango_nn_binclass import model
 
-log_dir_root = '../../logs'
-out_dir_root = '../../outputs'
+config_file = '../../configs/cango_nn_raw.yaml'
 
 
-def main():
-    log_dir, out_dir = init_outputs()
+def main(argv):
+    cfg = config.YamlParser(config_file)
+    log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
+                                   out_dir=cfg.out_dir(),
+                                   level=cfg.log_level())
 
     (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
-        path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
-        train_val_ratio=0.5, do_shuffle=False, do_smote=True, smote_ratio=0.5)
+        path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+        train_val_ratio=cfg.train_val_ratio(),
+        do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     # streams epoch results to a csv file
-    csv_logger = ka.callbacks.CSVLogger('{}/{}_epoches.log'.format(log_dir, constants.APP_CANGO_NN))
+    csv_logger = ka.callbacks.CSVLogger('{}/epoches.log'.format(log_dir))
 
     # checkpoint weight after each epoch if the validation loss decreased
-    checkpointer = ka.callbacks.ModelCheckpoint(filepath='{}/{}_weights.h5'.format(out_dir, constants.APP_CANGO_NN),
+    checkpointer = ka.callbacks.ModelCheckpoint(filepath='{}/weights.h5'.format(out_dir),
                                                 verbose=1,
                                                 save_best_only=True)
 
     # stop training when a monitored quality has stopped improving
-    early_stopping = ka.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=1, mode='auto')
+    early_stopping = ka.callbacks.EarlyStopping(monitor='val_loss',
+                                                min_delta=0, patience=5,
+                                                verbose=1, mode='auto')
 
     # Construct the model
     input_dim = x_train.shape[1]
-    model_nn = model.create_model(input_dim)
+    model_nn = model.create_model(input_dim,
+                                  regularization_val=cfg.model_reg_val(),
+                                  dropout_val=cfg.model_dropout_val(),
+                                  learning_rate=cfg.model_learning_rate())
 
     # Train the model
     class_weight = {
         0: 1.0,
         1: 1.0
     }
-    history = model_nn.fit(x_train, y_train, batch_size=100, epochs=100,
-                           # shuffle=True,
-                        verbose=0, validation_data=(x_val, y_val),
-                        class_weight=class_weight,
-                        callbacks=[checkpointer, csv_logger, early_stopping])
+    history = model_nn.fit(x_train, y_train,
+                           batch_size=cfg.model_train_batch_size(),
+                           epochs=cfg.model_train_epoches(),
+                           verbose=0, validation_data=(x_val, y_val),
+                           class_weight=class_weight,
+                           callbacks=[checkpointer, csv_logger, early_stopping])
     score = model_nn.evaluate(x_val, y_val, verbose=0)
     print('Validation score:', score[0])
     print('Validation accuracy:', score[1])
@@ -61,34 +68,11 @@ def main():
                          to_file='{}/plt_loss'.format(out_dir),
                          show=True)
 
-    predictions = model_nn.predict(x_val)
-    mse = np.mean(np.power(x_val - predictions, 2), axis=1)
-    error_df = pd.DataFrame({'reconstruction_error': mse,
-                             'true_class': y_val})
-
-    # Save the model
-    # model_nn.save_weights(filepath='{}/{}_weights.h5'.format(out_dir, constants.APP_CANGO_NN))
+    # save the model
     json_string = model_nn.to_json()
     open('{}/model_architecture.json'.format(out_dir), 'w').write(json_string)
     plot_model(model_nn, to_file='{}/model.png'.format(out_dir))
 
 
-def init_outputs():
-    dtstr = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-    log_dir = os.path.join(log_dir_root,
-                           "{}_{}".format(constants.APP_CANGO_NN, dtstr))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    out_dir = os.path.join(out_dir_root,
-                           constants.APP_CANGO_NN)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    logger.init_log('DEBUG')
-
-    return log_dir, out_dir
-
-
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

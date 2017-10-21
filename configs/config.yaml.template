@@ -1,0 +1,40 @@
+# configurations
+---
+input:
+  # training data input path
+  train_dataset: ./
+  # test data input path
+  test_dataset: ./
+  # train validate split ratio
+  train_val_ratio: 0.3
+  # If true, shuffle input data
+  do_shuffle: False
+  # If true, SMOTE the train data
+  do_smote: True
+  # SMOTE ratio. Do nothing if do_smote is false
+  smote_ratio: 0.5
+  # columns to be dropped from the input data
+  drop_columns: ['PBOC_Spouse']
+log:
+  # log severity. option: [INFO, DEBUG]
+  level: DEBUG
+  # log directory
+  log_dir: ./
+output:
+  # output directory
+  out_dir: ./
+model:
+  # regularization value
+  regularization_val: 0.0001
+  # dropout ratio
+  dropout_val: 0.5
+  # learning rate
+  learning_rate: 0.0001
+  train:
+    batch_size: 100
+    epoches: 100
+  predict:
+    batch_size: 100
+    epoches: 100
+
+...

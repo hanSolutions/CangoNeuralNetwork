@@ -10,7 +10,7 @@ import common.constants as c
 
 def create_model(input_dimension,
                  regularization_val=0.0001,
-                 # dropout_val=0.5,
+                 dropout_val=0.5,
                  gaussian_noise_val=0.0,
                  learning_rate=0.0001
                  ):

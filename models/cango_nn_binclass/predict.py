@@ -3,74 +3,55 @@ import numpy as np
 import logging
 import datasets.cango_pboc as cango
 
-from utils import plots, metrics, sampling
-from common import logger, constants
+from utils import plots, metrics
+from common import logger, config
 from keras.models import model_from_json
 
-log_dir_root = '../../logs'
-out_dir_root = '../../outputs'
-
 log = logging.getLogger(__name__)
+config_file = '../../configs/cango_nn_raw.yaml'
 
 
-def get_model():
+def get_model(model_path, weight_path):
     # Load the model architecture
-    model = model_from_json(open('../../outputs/cango_nn_binclass/model_architecture.json').read())
+    model = model_from_json(open('{}/model_architecture.json'.format(model_path)).read())
     # Load the model weights
-    model.load_weights('../../outputs/cango_nn_binclass/cango_nn_binclass_weights.h5')
+    model.load_weights('{}/weights.h5'.format(weight_path))
     return model
-
-
-def init():
-    dtstr = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-    log_dir = os.path.join(log_dir_root,
-                           "{}_{}".format(constants.APP_CANGO_NN, dtstr))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    out_dir = os.path.join(out_dir_root,
-                           constants.APP_CANGO_NN)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    logger.init_log('DEBUG')
-
-    return log_dir, out_dir
 
 
 if __name__ == '__main__':
 
-    log_dir, out_dir = init()
+    cfg = config.YamlParser(config_file)
+    log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
+                                   out_dir=cfg.out_dir(),
+                                   level=cfg.log_level())
 
     (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
-        path='../../data/03_07_0_0_MaxMin01/clean_raw_pboc.csv',
-        train_val_ratio=0.3, do_shuffle=False, do_smote=False)
+        path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+        train_val_ratio=cfg.train_val_ratio(), do_shuffle=False, do_smote=False)
 
     x_test, y_test = cango.get_test_data(
-        path='../../data/03_07_0_0_MaxMin01/clean_test_pboc.csv')
+        path=cfg.test_data(), drop_columns=cfg.drop_columns())
 
-    model_nn = get_model()
+    model_nn = get_model(cfg.out_dir(), cfg.out_dir())
 
-    # y_pred = p(class(x)=1)
-    y_pred_test = model_nn.predict(x_test)
+    y_pred_test = model_nn.predict(x_test, batch_size=100)
     y_pred_test = y_pred_test.ravel()
     proba_b_test = y_pred_test
-    proba_b_test = sampling.undo_oversampling(proba_b_test, 0.024, 0.2)
+    # proba_b_test = sampling.undo_oversampling(proba_b_test, 0.024, 0.2)
     ones = np.ones(proba_b_test.shape).ravel()
     proba_g_test = ones - proba_b_test
     y_pred_test_out = [1 if e > 0.5 else 0 for e in y_pred_test]
     y_pred_test_1 = np.count_nonzero(y_pred_test_out)
     y_pred_test_0 = len(y_pred_test_out) - y_pred_test_1
 
-    # y_pred_test_1 = undo_oversampling(y_pred_test_1, 0.036, 0.2)
-
     log.debug('predict test dataset distribution: 0 - {}, 1 - {}'.format(
         y_pred_test_0, y_pred_test_1
     ))
 
-    y_pred_train = model_nn.predict(x_train)
+    y_pred_train = model_nn.predict(x_train, batch_size=100)
     y_pred_train = y_pred_train.ravel()
-    y_pred_train = sampling.undo_oversampling(y_pred_train, 0.024, 0.2)
+    # y_pred_train = sampling.undo_oversampling(y_pred_train, 0.024, 0.2)
     y_pred_train_out = [1 if e > 0.5 else 0 for e in y_pred_train]
     y_pred_train_1 = np.count_nonzero(y_pred_train_out)
     y_pred_train_0 = len(y_pred_train_out) - y_pred_train_1

@@ -8,6 +8,7 @@ log = logging.getLogger(__name__)
 
 
 def get_train_val_data(path=None,
+                       drop_columns=None,
                        categorical_labels=False,
                        train_val_ratio=0.2,
                        do_shuffle=False,
@@ -23,7 +24,9 @@ def get_train_val_data(path=None,
     input_data = pd.read_csv(path)
 
     # drop columns from training set
-    # input_data.drop(c.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
+    if drop_columns is not None:
+        for col in drop_columns:
+            input_data.drop(col, axis=1, inplace=True)
 
     dataset = input_data.values
     num_rows = input_data.shape[0]
@@ -68,6 +71,7 @@ def get_train_val_data(path=None,
 
 
 def get_test_data(path=None,
+                  drop_columns=None,
                   categorical_labels=False,
                   do_reshape=False,
                   reshape_size=[1, 25, 25]):
@@ -78,7 +82,9 @@ def get_test_data(path=None,
     input_data = pd.read_csv(path)
 
     # drop 'id' column from training set
-    # input_data.drop(c.DAT_COL_PBOC_SPOUSE, axis=1, inplace=True)
+    if drop_columns is not None:
+        for col in drop_columns:
+            input_data.drop(col, axis=1, inplace=True)
 
     dataset = input_data.values
     num_rows = input_data.shape[0]
