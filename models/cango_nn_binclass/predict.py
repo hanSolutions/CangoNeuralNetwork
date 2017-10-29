@@ -49,23 +49,23 @@ if __name__ == '__main__':
         y_pred_test_0, y_pred_test_1
     ))
 
-    y_pred_train = model_nn.predict(x_train, batch_size=100)
-    y_pred_train = y_pred_train.ravel()
+    y_pred_val = model_nn.predict(x_val, batch_size=100)
+    y_pred_val = y_pred_val.ravel()
     # y_pred_train = sampling.undo_oversampling(y_pred_train, 0.024, 0.2)
-    y_pred_train_out = [1 if e > 0.5 else 0 for e in y_pred_train]
-    y_pred_train_1 = np.count_nonzero(y_pred_train_out)
-    y_pred_train_0 = len(y_pred_train_out) - y_pred_train_1
+    y_pred_val_out = [1 if e > 0.5 else 0 for e in y_pred_val]
+    y_pred_val_1 = np.count_nonzero(y_pred_val_out)
+    y_pred_val_0 = len(y_pred_val_out) - y_pred_val_1
 
     log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
-        y_pred_train_0, y_pred_train_1
+        y_pred_val_0, y_pred_val_1
     ))
 
     # KS test score
     ks = metrics.ks_stat(proba_b_test, proba_g_test)
-    log.info('ks score: {}'.format(ks))
+    log.info('ks val score: {}'.format(ks))
 
     # PSI
-    psi = metrics.psi(y_pred_train_out, y_pred_test_out)
+    psi = metrics.psi(y_pred_val_out, y_pred_test_out)
     log.info('psi: {}'.format(psi))
 
     # AUC ROC
@@ -74,9 +74,9 @@ if __name__ == '__main__':
     plots.roc_auc(y_true=y_test, y_score=y_pred_test,
                   to_file='{}/roc'.format(out_dir), show=True)
 
-    auroc1 = metrics.auc_roc(y_true=y_train, y_score=y_pred_train)
+    auroc1 = metrics.auc_roc(y_true=y_val, y_score=y_pred_val)
     log.info("auc_roc score: {}".format(auroc1))
-    plots.roc_auc(y_true=y_train, y_score=y_pred_train,
+    plots.roc_auc(y_true=y_val, y_score=y_pred_val,
                   to_file='{}/roc1'.format(out_dir), show=True)
 
     # confusion matrix
@@ -84,6 +84,6 @@ if __name__ == '__main__':
                            to_file='{}/confusion'.format(out_dir),
                            show=True)
 
-    plots.confusion_matrix(y_true=y_train, y_pred=np.asarray(y_pred_train_out),
+    plots.confusion_matrix(y_true=y_val, y_pred=np.asarray(y_pred_val_out),
                            to_file='{}/confusion1'.format(out_dir),
                            show=True)

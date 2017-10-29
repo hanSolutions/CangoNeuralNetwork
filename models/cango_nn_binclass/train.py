@@ -42,15 +42,11 @@ def main(argv):
                                   learning_rate=cfg.model_learning_rate())
 
     # Train the model
-    class_weight = {
-        0: 1.0,
-        1: 1.0
-    }
     history = model_nn.fit(x_train, y_train,
                            batch_size=cfg.model_train_batch_size(),
                            epochs=cfg.model_train_epoches(),
                            verbose=0, validation_data=(x_val, y_val),
-                           class_weight=class_weight,
+                           class_weight=cfg.model_class_weight(),
                            callbacks=[checkpointer, csv_logger, early_stopping])
     score = model_nn.evaluate(x_val, y_val, verbose=0)
     print('Validation score:', score[0])

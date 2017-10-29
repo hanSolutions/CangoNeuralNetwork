@@ -49,6 +49,9 @@ class YamlParser:
     def model_learning_rate(self):
         return float(self.config[c.CONFIG_SECT_MODEL]['learning_rate'])
 
+    def model_class_weight(self):
+        return self.config[c.CONFIG_SECT_MODEL]['class_weight']
+
     def model_train_batch_size(self):
         return int(self.config[c.CONFIG_SECT_MODEL]['train']['batch_size'])
 

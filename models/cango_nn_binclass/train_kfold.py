@@ -48,7 +48,7 @@ def main(argv):
         model_nn.fit(X[train_index], Y[train_index],
                      batch_size=cfg.model_train_batch_size(),
                      epochs=cfg.model_train_epoches(),
-                     verbose=0,
+                     verbose=0, class_weight=cfg.model_class_weight(),
                      validation_data=(X[test_index], Y[test_index]),
                      callbacks=[early_stopping, checkpointer]
                      )
