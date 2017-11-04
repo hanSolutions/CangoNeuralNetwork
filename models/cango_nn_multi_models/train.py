@@ -71,4 +71,9 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    argv = sys.argv[1:]
+    if len(argv) < 1:
+        print("Expect input argument: config file path.")
+        sys.exit()
+
+    main(argv)

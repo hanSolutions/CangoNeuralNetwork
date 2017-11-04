@@ -1,4 +1,4 @@
-import os, datetime
+import os, sys, datetime
 import numpy as np
 import logging
 import datasets.cango_pboc as cango
@@ -19,7 +19,7 @@ def get_model(model_path, weight_path):
     return model
 
 
-if __name__ == '__main__':
+def main(argv):
 
     cfg = config.YamlParser(config_file)
     log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
@@ -87,3 +87,12 @@ if __name__ == '__main__':
     plots.confusion_matrix(y_true=y_val, y_pred=np.asarray(y_pred_val_out),
                            to_file='{}/confusion1'.format(out_dir),
                            show=True)
+
+
+if __name__ == '__main__':
+    argv = sys.argv[1:]
+    if len(argv) < 1:
+        print("Expect input argument: config file path.")
+        sys.exit()
+
+    main(argv)

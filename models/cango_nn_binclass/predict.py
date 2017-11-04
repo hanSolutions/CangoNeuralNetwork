@@ -1,4 +1,4 @@
-import os, datetime
+import os, sys, datetime
 import numpy as np
 import logging
 import datasets.cango_pboc as cango
@@ -8,7 +8,6 @@ from common import logger, config
 from keras.models import model_from_json
 
 log = logging.getLogger(__name__)
-config_file = '../../configs/cango_nn_raw.yaml'
 
 
 def get_model(model_path, weight_path):
@@ -19,19 +18,20 @@ def get_model(model_path, weight_path):
     return model
 
 
-if __name__ == '__main__':
+def main(argv):
+    config_file = argv[0]
 
     cfg = config.YamlParser(config_file)
     log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
                                    out_dir=cfg.out_dir(),
                                    level=cfg.log_level())
 
-    (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
+    (x_train, y_train), (x_val, y_val), (x_test, y_test) = cango.get_train_val_test_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
-        train_val_ratio=cfg.train_val_ratio(), do_shuffle=False, do_smote=False)
+        train_val_ratio=cfg.train_val_ratio(), do_shuffle=True, do_smote=False)
 
-    x_test, y_test = cango.get_test_data(
-        path=cfg.test_data(), drop_columns=cfg.drop_columns())
+    # x_test, y_test = cango.get_test_data(
+    #     path=cfg.test_data(), drop_columns=cfg.drop_columns())
 
     model_nn = get_model(cfg.out_dir(), cfg.out_dir())
 
@@ -68,16 +68,13 @@ if __name__ == '__main__':
     psi = metrics.psi(y_pred_val_out, y_pred_test_out)
     log.info('psi: {}'.format(psi))
 
-    # AUC ROC
-    auroc = metrics.auc_roc(y_true=y_test, y_score=y_pred_test)
-    log.info("auc_roc score: {}".format(auroc))
-    plots.roc_auc(y_true=y_test, y_score=y_pred_test,
-                  to_file='{}/roc'.format(out_dir), show=True)
-
-    auroc1 = metrics.auc_roc(y_true=y_val, y_score=y_pred_val)
-    log.info("auc_roc score: {}".format(auroc1))
-    plots.roc_auc(y_true=y_val, y_score=y_pred_val,
-                  to_file='{}/roc1'.format(out_dir), show=True)
+    # auc-roc
+    y_true_arr = [y_test, y_val]
+    y_score_arr = [y_pred_test, y_pred_val]
+    y_label_arr = ['AUC-test', 'AUC-val']
+    plots.roc_auc_multi(y_true_arr=y_true_arr, y_score_arr=y_score_arr,
+                        label_arr=y_label_arr,
+                        to_file='{}/roc_all'.format(out_dir), show=True)
 
     # confusion matrix
     plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out),
@@ -87,3 +84,12 @@ if __name__ == '__main__':
     plots.confusion_matrix(y_true=y_val, y_pred=np.asarray(y_pred_val_out),
                            to_file='{}/confusion1'.format(out_dir),
                            show=True)
+
+
+if __name__ == '__main__':
+    argv = sys.argv[1:]
+    if len(argv) < 1:
+        print("Expect input argument: config file path.")
+        sys.exit()
+
+    main(argv)

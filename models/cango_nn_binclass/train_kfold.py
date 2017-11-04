@@ -8,10 +8,8 @@ from models.cango_nn_binclass import model
 from sklearn.model_selection import StratifiedKFold
 
 
-config_file = '../../configs/cango_nn_raw.yaml'
-
-
 def main(argv):
+    config_file = argv[0]
     cfg = config.YamlParser(config_file)
     log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
                                    out_dir=cfg.out_dir(),
@@ -60,4 +58,9 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    argv = sys.argv[1:]
+    if len(argv) < 1:
+        print("Expect input argument: config file path.")
+        sys.exit()
+
+    main(argv)

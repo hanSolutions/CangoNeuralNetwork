@@ -30,6 +30,12 @@ def data_split2(data, split_ratio):
     return split_left, split_right
 
 
+def data_split3(data, ratio1, ratio2):
+    split_left, split_mid, split_right = \
+        np.split(data, [int(ratio1*len(data)), int(ratio2*len(data))])
+    return split_left, split_mid, split_right
+
+
 def reshape(data, reshape_size):
     d = reshape_size[0]
     w = reshape_size[1]
