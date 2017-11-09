@@ -18,6 +18,16 @@ def get_model(model_path, weight_path):
     return model
 
 
+def get_predict(model, data, batch_size):
+    pred = model.predict(data, batch_size=batch_size)
+    pred = pred.ravel()
+    proba_c1 = pred
+    ones = np.ones(proba_c1.shape).ravel()
+    proba_c0 = ones - proba_c1
+    predict_out = [1 if e > 0.5 else 0 for e in pred]
+    return predict_out, proba_c0, proba_c1
+
+
 def main(argv):
     config_file = argv[0]
 
@@ -26,51 +36,60 @@ def main(argv):
                                    out_dir=cfg.out_dir(),
                                    level=cfg.log_level())
 
-    (x_train, y_train), (x_val, y_val), (x_test, y_test) = cango.get_train_val_test_data(
+    (x_train, y_train), (x_val, y_val) = cango.get_train_val_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
         train_val_ratio=cfg.train_val_ratio(), do_shuffle=True, do_smote=False)
 
-    # x_test, y_test = cango.get_test_data(
-    #     path=cfg.test_data(), drop_columns=cfg.drop_columns())
+    x_test, y_test = cango.get_test_data(
+        path=cfg.test_data(), drop_columns=cfg.drop_columns())
 
     model_nn = get_model(cfg.out_dir(), cfg.out_dir())
 
-    y_pred_test = model_nn.predict(x_test, batch_size=100)
-    y_pred_test = y_pred_test.ravel()
-    proba_b_test = y_pred_test
-    # proba_b_test = sampling.undo_oversampling(proba_b_test, 0.024, 0.2)
-    ones = np.ones(proba_b_test.shape).ravel()
-    proba_g_test = ones - proba_b_test
-    y_pred_test_out = [1 if e > 0.5 else 0 for e in y_pred_test]
+    y_pred_train_out, proba_g_train, proba_b_train = get_predict(
+        model=model_nn, data=x_train, batch_size=100)
+    # y_pred_val_1 = np.count_nonzero(y_pred_train_out)
+    # y_pred_val_0 = len(y_pred_train_out) - y_pred_val_1
+    # log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
+    #     y_pred_val_0, y_pred_val_1
+    # ))
+
+    y_pred_val_out, proba_g_val, proba_b_val = get_predict(
+        model=model_nn, data=x_val, batch_size=100)
+    y_pred_val_1 = np.count_nonzero(y_pred_val_out)
+    y_pred_val_0 = len(y_pred_val_out) - y_pred_val_1
+    log.debug('predict validation dataset distribution: 0 - {}, 1 - {}'.format(
+        y_pred_val_0, y_pred_val_1
+    ))
+
+    y_pred_test_out, proba_g_test, proba_b_test = get_predict(
+        model=model_nn, data=x_test, batch_size=100)
     y_pred_test_1 = np.count_nonzero(y_pred_test_out)
     y_pred_test_0 = len(y_pred_test_out) - y_pred_test_1
-
     log.debug('predict test dataset distribution: 0 - {}, 1 - {}'.format(
         y_pred_test_0, y_pred_test_1
     ))
 
-    y_pred_val = model_nn.predict(x_val, batch_size=100)
-    y_pred_val = y_pred_val.ravel()
-    # y_pred_train = sampling.undo_oversampling(y_pred_train, 0.024, 0.2)
-    y_pred_val_out = [1 if e > 0.5 else 0 for e in y_pred_val]
-    y_pred_val_1 = np.count_nonzero(y_pred_val_out)
-    y_pred_val_0 = len(y_pred_val_out) - y_pred_val_1
-
-    log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
-        y_pred_val_0, y_pred_val_1
-    ))
+    # output
+    np.savetxt('{}/predict.csv'.format(cfg.out_dir()),
+               np.c_[y_pred_test_out, proba_g_test, proba_b_test],
+               delimiter=',', header='Label, p0, p1',
+               comments='', fmt='%d, %f, %f')
 
     # KS test score
-    ks = metrics.ks_stat(proba_b_test, proba_g_test)
-    log.info('ks val score: {}'.format(ks))
+    ks_val = metrics.ks_stat(proba_b_val, proba_g_val)
+    log.info('ks validation score: {}'.format(ks_val))
+    ks_test = metrics.ks_stat(proba_b_test, proba_g_test)
+    log.info('ks test score: {}'.format(ks_test))
 
     # PSI
-    psi = metrics.psi(y_pred_val_out, y_pred_test_out)
-    log.info('psi: {}'.format(psi))
+    psi = metrics.psi(y_pred_train_out, y_pred_val_out)
+    log.info('validation psi: {}'.format(psi))
+    psi = metrics.psi(y_pred_train_out, y_pred_test_out)
+    log.info('test psi: {}'.format(psi))
 
     # auc-roc
     y_true_arr = [y_test, y_val]
-    y_score_arr = [y_pred_test, y_pred_val]
+    y_score_arr = [proba_b_test, proba_b_val]
     y_label_arr = ['AUC-test', 'AUC-val']
     plots.roc_auc_multi(y_true_arr=y_true_arr, y_score_arr=y_score_arr,
                         label_arr=y_label_arr,

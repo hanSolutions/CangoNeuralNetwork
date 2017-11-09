@@ -168,6 +168,9 @@ def get_test_data(path=None,
     labels = dataset[:, num_cols - 1]
     labels = dat_utils.flat_to_one_hot(labels, categorical=categorical_labels)
     dataset = np.delete(dataset, -1, axis=1)
+    log.debug('Test label distribution: 0 - {}, 1 - {}'.format(
+        len(labels) - np.count_nonzero(labels),
+        np.count_nonzero(labels)))
 
     # reshape 1-D array to 2-D
     if do_reshape:
