@@ -22,8 +22,8 @@ def get_predict(model, data, batch_size):
     pred = model.predict(data, batch_size=batch_size)
     pred = pred.ravel()
     proba_c1 = pred
-    ones = np.ones(proba_c1.shape).ravel()
-    proba_c0 = ones - proba_c1
+    ones = np.ones(shape=proba_c1.shape, dtype=np.float).ravel()
+    proba_c0 = np.subtract(ones, proba_c1, dtype=np.float)
     predict_out = [1 if e > 0.5 else 0 for e in pred]
     return predict_out, proba_c0, proba_c1
 
@@ -47,11 +47,11 @@ def main(argv):
 
     y_pred_train_out, proba_g_train, proba_b_train = get_predict(
         model=model_nn, data=x_train, batch_size=100)
-    # y_pred_val_1 = np.count_nonzero(y_pred_train_out)
-    # y_pred_val_0 = len(y_pred_train_out) - y_pred_val_1
-    # log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
-    #     y_pred_val_0, y_pred_val_1
-    # ))
+    y_pred_val_1 = np.count_nonzero(y_pred_train_out)
+    y_pred_val_0 = len(y_pred_train_out) - y_pred_val_1
+    log.debug('predict train dataset distribution: 0 - {}, 1 - {}'.format(
+        y_pred_val_0, y_pred_val_1
+    ))
 
     y_pred_val_out, proba_g_val, proba_b_val = get_predict(
         model=model_nn, data=x_val, batch_size=100)
@@ -72,8 +72,12 @@ def main(argv):
     # output
     np.savetxt('{}/predict.csv'.format(cfg.out_dir()),
                np.c_[y_pred_test_out, proba_g_test, proba_b_test],
-               delimiter=',', header='Label, p0, p1',
-               comments='', fmt='%d, %f, %f')
+               delimiter=',', header='Label, p_g, p_b',
+               comments='', fmt='%d, %.6f, %.6f')
+    np.savetxt('{}/predict_val.csv'.format(cfg.out_dir()),
+               np.c_[y_pred_val_out, proba_g_val, proba_b_val],
+               delimiter=',', header='Label, p_g, p_b',
+               comments='', fmt='%d, %.6f, %.6f')
 
     # KS test score
     ks_val = metrics.ks_stat(proba_b_val, proba_g_val)
@@ -88,17 +92,17 @@ def main(argv):
     log.info('test psi: {}'.format(psi))
 
     # auc-roc
-    y_true_arr = [y_test, y_val]
-    y_score_arr = [proba_b_test, proba_b_val]
-    y_label_arr = ['AUC-test', 'AUC-val']
-    plots.roc_auc_multi(y_true_arr=y_true_arr, y_score_arr=y_score_arr,
-                        label_arr=y_label_arr,
-                        to_file='{}/roc_all'.format(out_dir), show=True)
-
-    # confusion matrix
-    plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out),
-                           to_file='{}/confusion'.format(out_dir),
-                           show=True)
+    if y_test is not None:
+        y_true_arr = [y_test, y_val]
+        y_score_arr = [proba_b_test, proba_b_val]
+        y_label_arr = ['AUC-test', 'AUC-val']
+        plots.roc_auc_multi(y_true_arr=y_true_arr, y_score_arr=y_score_arr,
+                            label_arr=y_label_arr,
+                            to_file='{}/roc_all'.format(out_dir), show=True)
+        # confusion matrix
+        plots.confusion_matrix(y_true=y_test, y_pred=np.asarray(y_pred_test_out),
+                               to_file='{}/confusion'.format(out_dir),
+                               show=True)
 
     plots.confusion_matrix(y_true=y_val, y_pred=np.asarray(y_pred_val_out),
                            to_file='{}/confusion1'.format(out_dir),
