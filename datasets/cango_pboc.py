@@ -151,7 +151,7 @@ def get_test_data(path=None,
     log.info("Loading data from '{}'".format(path))
     input_data = pd.read_csv(path)
 
-    # drop 'id' column from training set
+    # drop columns from training set
     if drop_columns is not None:
         for col in drop_columns:
             input_data.drop(col, axis=1, inplace=True)
@@ -161,20 +161,20 @@ def get_test_data(path=None,
     num_cols = input_data.shape[1]
     log.debug('total numbers of test data: {}'.format(num_rows))
 
-    # shuffle
-    dat_utils.shuffle(dataset)
-
     # labels one-hot
-    labels = dataset[:, num_cols - 1]
-    labels = dat_utils.flat_to_one_hot(labels, categorical=categorical_labels)
-    dataset = np.delete(dataset, -1, axis=1)
-    log.debug('Test label distribution: 0 - {}, 1 - {}'.format(
-        len(labels) - np.count_nonzero(labels),
-        np.count_nonzero(labels)))
+    labels = None
+    if input_data.get('label') is not None:
+        labels = dataset[:, num_cols - 1]
+        labels = dat_utils.flat_to_one_hot(labels, categorical=categorical_labels)
+        dataset = np.delete(dataset, -1, axis=1)
+        log.debug('Test label distribution: 0 - {}, 1 - {}'.format(
+            len(labels) - np.count_nonzero(labels), np.count_nonzero(labels)))
 
     # reshape 1-D array to 2-D
     if do_reshape:
         dataset = dat_utils.reshape(data=dataset, reshape_size=reshape_size)
 
     return dataset, labels
+
+
 
