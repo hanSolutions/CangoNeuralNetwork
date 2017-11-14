@@ -7,10 +7,9 @@ from datasets import cango_pboc
 from keras.utils import plot_model
 from models.cango_nn_multi_models.model import MultiModelsNeuralNetwork
 
-config_file = '../../configs/cango_nn_multi_models.yaml'
-
 
 def main(argv):
+    config_file = argv[0]
     cfg = config.YamlParser(config_file)
     log_dir, out_dir = logger.init(log_dir=cfg.log_dir(),
                                    out_dir=cfg.out_dir(),

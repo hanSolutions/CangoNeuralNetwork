@@ -31,12 +31,21 @@ class MultiModelsNeuralNetwork(object):
 
     def create_model(self):
         branch1 = self.__create_sub_model()
-        branch2 = self.__create_sub_model()
+        branch2 = self.__create_sub_model1()
         # branch3 = self.__create_sub_model()
         # m4 = self.__create_sub_model()
 
         model = Sequential()
         model.add(Merge([branch1, branch2], mode='concat'))
+
+        model.add(Dense(8,
+                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
+                        bias_initializer='zero',
+                        kernel_regularizer=regularizers.l2(self.reg_val),
+                        activity_regularizer=regularizers.l2(self.reg_val)))
+        model.add(BatchNormalization())
+        model.add(LeakyReLU())
+
         model.add(Dense(1, init='normal', activation='sigmoid'))
         model.compile(loss='binary_crossentropy',
                            optimizer=optimizers.nadam(lr=self.learning_rate),
@@ -95,5 +104,4 @@ class MultiModelsNeuralNetwork(object):
         model.add(LeakyReLU())
         # model.add(Dropout(dropout_val))
 
-        model.add(Dense(1, kernel_initializer='normal', activation='sigmoid'))
         return model
