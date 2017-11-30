@@ -23,10 +23,10 @@ def shuffle(data):
 
 def data_split2(data, split_ratio):
     data_size = len(data)
-    split_size = int(data_size * split_ratio)
+    split_size = int(data_size * (1 - split_ratio))
 
-    split_left = data[split_size:]
-    split_right = data[:split_size]
+    split_left = data[:split_size]
+    split_right = data[split_size:]
     return split_left, split_right
 
 

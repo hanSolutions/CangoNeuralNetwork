@@ -114,13 +114,17 @@ def get_train_val_test_data(path=None,
     train_labels, validation_labels, test_labels =\
         dat_utils.data_split3(data=labels, ratio1=.6, ratio2=.8)
 
-    log.debug('Training label distribution: 0 - {}, 1 - {}'.format(
+    log.debug('Training labels distribution: 0 - {}, 1 - {}'.format(
         train_labels.shape[0] - np.count_nonzero(train_labels),
         np.count_nonzero(train_labels)))
 
-    log.debug('Validation label distribution: 0 - {}, 1 - {}'.format(
+    log.debug('Validation labels distribution: 0 - {}, 1 - {}'.format(
         validation_labels.shape[0] - np.count_nonzero(validation_labels),
         np.count_nonzero(validation_labels)))
+
+    log.debug('Test labels distribution: 0 - {}, 1 - {}'.format(
+        test_labels.shape[0] - np.count_nonzero(test_labels),
+        np.count_nonzero(test_labels)))
 
     # Synthetic Minority Over-sampling (SMOTE) only on train dataset
     if do_smote:
