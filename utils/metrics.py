@@ -1,7 +1,44 @@
 import numpy as np
-
+import pandas as pd
 from scipy import stats
 from sklearn import metrics
+
+
+def calc_KS_AR(df, col, label):
+    """
+    :param df: the dataframe that contains probability and bad indicator
+    :param score:
+    :return:
+    """
+    total = pd.DataFrame({'total': df.groupby(col)[label].count()})
+    bad = pd.DataFrame({'bad': df.groupby(col)[label].sum()})
+    regroup = total.merge(bad, how='left', left_index=True, right_index=True)
+    regroup['good'] = regroup['total'] - regroup['bad']
+    regroup.reset_index(inplace=True)
+    regroup['goodCumPer'] = regroup['good'].cumsum() / regroup['good'].sum()
+    regroup['badCumPer'] = regroup['bad'].cumsum() / regroup['bad'].sum()
+    # regroup['totalPer'] = regroup['total'] / regroup['total'].sum()
+
+    KS = regroup.apply(lambda x: x.badCumPer - x.goodCumPer, axis=1)
+    return max(KS), regroup
+
+
+def cals_KS_bins(df, col, label):
+    bins = []
+    count0 = []
+    count1 = []
+    for x in range(1, 11):
+        ub = x * 0.1
+        lb = ub - 0.1
+        bin = df.query("{:.2f} <= {} < {:.2f}".format(lb, col, ub))
+        c1 = np.count_nonzero(bin[label])
+        c0 = bin[label].count() - c1
+
+        bins.append(ub)
+        count0.append(c0)
+        count1.append(c1)
+
+    return bins, count0, count1
 
 
 def ks_scipy(seq1, seq2):

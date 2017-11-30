@@ -81,6 +81,7 @@ def roc_auc_multi(y_true_arr, y_score_arr, label_arr, to_file=None, show=True):
 def confusion_matrix(y_true, y_pred, to_file=None, show=True):
     conf_matrix = skmetrics.confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(12, 12))
+    sns.set(font_scale=2.0)
     sns.heatmap(conf_matrix, annot=True, fmt="d")
     plt.title("Confusion matrix")
     plt.ylabel('True class')
