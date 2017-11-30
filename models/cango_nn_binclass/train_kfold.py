@@ -18,7 +18,7 @@ def main(argv):
 
     (X, Y), (_, _) = cango_pboc.get_train_val_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
-        train_val_ratio=0.0,
+        train_val_ratio=cfg.train_val_ratio(),
         do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     kfold = StratifiedKFold(n_splits=10, shuffle=True,

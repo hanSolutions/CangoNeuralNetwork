@@ -22,6 +22,10 @@ class MultiModelsNeuralNetwork(object):
         self.dropout_val = DEFAULT_DROPOUT_VAL
         self.gaussian_noise_val = DEFAULT_GUASSIAN_NOISE_VAL
         self.learning_rate = DEFAULT_LEARNING_RATE
+        self.models = []
+
+    def add_model(self, model):
+        self.models.append(model)
 
     def set_learning_rate(self, learning_rate):
         self.learning_rate = learning_rate
@@ -30,13 +34,13 @@ class MultiModelsNeuralNetwork(object):
         self.reg_val = reg_val
 
     def create_model(self):
-        branch1 = self.__create_sub_model()
-        branch2 = self.__create_sub_model1()
+        # branch1 = self.__create_sub_model()
+        # branch2 = self.__create_sub_model()
         # branch3 = self.__create_sub_model()
         # m4 = self.__create_sub_model()
 
         model = Sequential()
-        model.add(Merge([branch1, branch2], mode='concat'))
+        model.add(Merge(self.models, mode='concat'))
 
         model.add(Dense(8,
                         kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
@@ -52,56 +56,3 @@ class MultiModelsNeuralNetwork(object):
                            metrics=['accuracy'])
         return model
 
-    def __create_sub_model(self):
-        # create model
-        model = Sequential()
-        model.add(Dense(256, input_dim=self.input_dim,
-                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
-                        bias_initializer='zero',
-                        kernel_regularizer=regularizers.l2(self.reg_val),
-                        activity_regularizer=regularizers.l2(self.reg_val)))
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-        # model.add(Dropout(dropout_val))
-
-        # model.add(GaussianNoise(gaussian_noise_val))
-        model.add(Dense(256,
-                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
-                        bias_initializer='zero',
-                        kernel_regularizer=regularizers.l2(self.reg_val),
-                        activity_regularizer=regularizers.l2(self.reg_val)))
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-        # model.add(Dropout(dropout_val))
-
-        # model.add(GaussianNoise(gaussian_noise_val))
-        model.add(Dense(128,
-                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
-                        bias_initializer='zero',
-                        kernel_regularizer=regularizers.l2(self.reg_val),
-                        activity_regularizer=regularizers.l2(self.reg_val)))
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-        # model.add(Dropout(dropout_val))
-
-        # model.add(GaussianNoise(gaussian_noise_val))
-        model.add(Dense(64,
-                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
-                        bias_initializer='zero',
-                        kernel_regularizer=regularizers.l2(self.reg_val),
-                        activity_regularizer=regularizers.l2(self.reg_val)))
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-        # model.add(Dropout(dropout_val))
-
-        # model.add(GaussianNoise(gaussian_noise_val))
-        model.add(Dense(32,
-                        kernel_initializer=initializers.random_normal(mean=0.01, stddev=0.05, seed=c.random_seed),
-                        bias_initializer='zero',
-                        kernel_regularizer=regularizers.l2(self.reg_val),
-                        activity_regularizer=regularizers.l2(self.reg_val)))
-        model.add(BatchNormalization())
-        model.add(LeakyReLU())
-        # model.add(Dropout(dropout_val))
-
-        return model

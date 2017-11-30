@@ -1,5 +1,6 @@
 import sys
 import keras as ka
+import models.cango_nn_binclass.model as single_model
 
 from utils import plots
 from common import logger, constants, config
@@ -30,7 +31,7 @@ def main(argv):
 
     # stop training when a monitored quality has stopped improving
     early_stopping = ka.callbacks.EarlyStopping(monitor='val_loss',
-                                                min_delta=0, patience=5,
+                                                min_delta=0, patience=10,
                                                 verbose=1, mode='auto')
 
     # Construct the model
@@ -38,6 +39,16 @@ def main(argv):
     mmnn = MultiModelsNeuralNetwork(input_dim)
     mmnn.set_reg_val(cfg.model_reg_val())
     mmnn.set_learning_rate(cfg.model_learning_rate())
+    branch1 = single_model.create_model(input_dim,
+                                        regularization_val=cfg.model_reg_val(),
+                                        dropout_val=cfg.model_dropout_val(),
+                                        learning_rate=cfg.model_learning_rate())
+    mmnn.add_model(branch1)
+    branch2 = single_model.create_model(input_dim,
+                                        regularization_val=0.00001,
+                                        dropout_val=cfg.model_dropout_val(),
+                                        learning_rate=cfg.model_learning_rate())
+    mmnn.add_model(branch2)
     model_nn = mmnn.create_model()
 
     # Train the model

@@ -2,10 +2,12 @@ import sys
 import os
 import keras as ka
 import numpy as np
+import models.cango_nn_binclass.model as single_model
 from common import logger, constants, config
 from datasets import cango_pboc
 from sklearn.model_selection import StratifiedKFold
 from models.cango_nn_multi_models.model import MultiModelsNeuralNetwork
+
 
 def main(argv):
     config_file = argv[0]
@@ -17,7 +19,7 @@ def main(argv):
 
     (X, Y), (_, _) = cango_pboc.get_train_val_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
-        train_val_ratio=0.0,
+        train_val_ratio=cfg.train_val_ratio(),
         do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     kfold = StratifiedKFold(n_splits=10, shuffle=True,
@@ -27,14 +29,26 @@ def main(argv):
                                                 verbose=1,
                                                 save_best_only=True)
 
+    # Construct the model
+    input_dim = X.shape[1]
+    mmnn = MultiModelsNeuralNetwork(input_dim)
+    mmnn.set_reg_val(cfg.model_reg_val())
+    mmnn.set_learning_rate(cfg.model_learning_rate())
+    branch1 = single_model.create_model(input_dim,
+                                        regularization_val=cfg.model_reg_val(),
+                                        dropout_val=cfg.model_dropout_val(),
+                                        learning_rate=cfg.model_learning_rate())
+    mmnn.add_model(branch1)
+    branch2 = single_model.create_model(input_dim,
+                                        regularization_val=0.00001,
+                                        dropout_val=cfg.model_dropout_val(),
+                                        learning_rate=cfg.model_learning_rate())
+    mmnn.add_model(branch2)
+    model_nn = mmnn.create_model()
+
     cvscores = []
     for train_index, test_index in kfold.split(X, Y):
-        # Construct the model
-        input_dim = X.shape[1]
-        mmnn = MultiModelsNeuralNetwork(input_dim)
-        mmnn.set_reg_val(cfg.model_reg_val())
-        mmnn.set_learning_rate(cfg.model_learning_rate())
-        model_nn = mmnn.create_model()
+
 
         if os.path.exists(weight_path):
             model_nn.load_weights(weight_path)
