@@ -58,3 +58,6 @@ class YamlParser:
     def model_train_epoches(self):
         return int(self.config[c.CONFIG_SECT_MODEL]['train']['epoches'])
 
+    def cutoff(self):
+        return float(self.config[c.CONFIG_SECT_MODEL]["cutoff"])
+

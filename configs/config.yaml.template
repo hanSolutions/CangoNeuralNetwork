@@ -39,5 +39,9 @@ model:
   predict:
     batch_size: 100
     epoches: 100
+  # cut-off value. e.g. cutoff=0.2 implies
+  # prob >= 0.2 --> 0
+  # prob < 0.2  --> 1
+  cutoff: 0.2
 
 ...
