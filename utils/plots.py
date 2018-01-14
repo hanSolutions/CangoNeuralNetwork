@@ -31,7 +31,6 @@ def train_val_loss(train_loss, val_loss, to_file=None, show=True):
     if show:
         plt.show()
 
-
 def roc_auc(y_true, y_score, to_file=None, show=True):
     fpr, tpr, thresholds = roc_curve(y_true, y_score)
     roc_auc = auc(fpr, tpr)

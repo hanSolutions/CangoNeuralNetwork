@@ -17,10 +17,15 @@ def main(argv):
                                    level=cfg.log_level())
     weight_path = '{}/weights.h5'.format(out_dir)
 
-    (X, Y), (_, _) = cango_pboc.get_train_val_data(
+    (X, Y), (x_val, y_val), (_, _) = cango_pboc.get_train_val_test_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
         train_val_ratio=cfg.train_val_ratio(),
         do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+
+    # (X, Y), (x_val, y_val) = cango_pboc.get_train_val_data(
+    #     path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+    #     train_val_ratio=cfg.train_val_ratio(),
+    #     do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     kfold = StratifiedKFold(n_splits=10, shuffle=True,
                             random_state=constants.random_seed)
@@ -34,16 +39,14 @@ def main(argv):
     mmnn = MultiModelsNeuralNetwork(input_dim)
     mmnn.set_reg_val(cfg.model_reg_val())
     mmnn.set_learning_rate(cfg.model_learning_rate())
-    branch1 = single_model.create_model(input_dim,
-                                        regularization_val=cfg.model_reg_val(),
-                                        dropout_val=cfg.model_dropout_val(),
-                                        learning_rate=cfg.model_learning_rate())
-    mmnn.add_model(branch1)
-    branch2 = single_model.create_model(input_dim,
-                                        regularization_val=0.00001,
-                                        dropout_val=cfg.model_dropout_val(),
-                                        learning_rate=cfg.model_learning_rate())
-    mmnn.add_model(branch2)
+
+    for i in range(0, 2):
+        branch = single_model.create_model(input_dim,
+                                           regularization_val=cfg.model_reg_val() * (i * 0.1),
+                                           dropout_val=cfg.model_dropout_val(),
+                                           learning_rate=cfg.model_learning_rate())
+        mmnn.add_model(branch)
+
     model_nn = mmnn.create_model()
 
     cvscores = []
@@ -56,20 +59,29 @@ def main(argv):
         early_stopping = ka.callbacks.EarlyStopping(monitor='val_loss',
                                                     min_delta=0, patience=5,
                                                     verbose=1, mode='auto')
+        train_array = []
+        val_array = []
+        for i in range(0, 2):
+            train_array.append(X[train_index])
+            val_array.append(x_val)
 
-        model_nn.fit([X[train_index], X[train_index]],
+        model_nn.fit(train_array,
                      Y[train_index],
                      batch_size=cfg.model_train_batch_size(),
                      epochs=cfg.model_train_epoches(),
                      verbose=0, class_weight=cfg.model_class_weight(),
-                     validation_data=([X[test_index], X[test_index]], Y[test_index]),
+                     validation_data=(val_array, y_val),
                      callbacks=[early_stopping, checkpointer]
                      )
-        scores = model_nn.evaluate([X[test_index], X[test_index]], Y[test_index], verbose=0)
+        scores = model_nn.evaluate(val_array, y_val, verbose=0)
         print("%s: %.2f%%" % (model_nn.metrics_names[1], scores[1] * 100))
         cvscores.append(scores[1] * 100)
 
     print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+    # save the model
+    json_string = model_nn.to_json()
+    open('{}/model_architecture.json'.format(out_dir), 'w').write(json_string)
 
 
 if __name__ == '__main__':

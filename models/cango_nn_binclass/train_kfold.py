@@ -16,10 +16,16 @@ def main(argv):
                                    level=cfg.log_level())
     weight_path = '{}/weights.h5'.format(out_dir)
 
-    (X, Y), (_, _) = cango_pboc.get_train_val_data(
-        path=cfg.train_data(), drop_columns=cfg.drop_columns(),
-        train_val_ratio=cfg.train_val_ratio(),
-        do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+    if cfg.one_filer():
+        (X, Y), (x_val, y_val), (_, _) = cango_pboc.get_train_val_test_data(
+            path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+            train_val_ratio=cfg.train_val_ratio(),
+            do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+    else:
+        (X, Y), (x_val, y_val) = cango_pboc.get_train_val_data(
+            path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+            train_val_ratio=cfg.train_val_ratio(),
+            do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     kfold = StratifiedKFold(n_splits=10, shuffle=True,
                             random_state=constants.random_seed)
@@ -47,14 +53,18 @@ def main(argv):
                      batch_size=cfg.model_train_batch_size(),
                      epochs=cfg.model_train_epoches(),
                      verbose=0, class_weight=cfg.model_class_weight(),
-                     validation_data=(X[test_index], Y[test_index]),
+                     validation_data=(x_val, y_val),
                      callbacks=[early_stopping, checkpointer]
                      )
-        scores = model_nn.evaluate(X[test_index], Y[test_index], verbose=0)
+        scores = model_nn.evaluate(x_val, y_val, verbose=0)
         print("%s: %.2f%%" % (model_nn.metrics_names[1], scores[1] * 100))
         cvscores.append(scores[1] * 100)
 
     print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+    # save the model
+    json_string = model_nn.to_json()
+    open('{}/model_architecture.json'.format(out_dir), 'w').write(json_string)
 
 
 if __name__ == '__main__':

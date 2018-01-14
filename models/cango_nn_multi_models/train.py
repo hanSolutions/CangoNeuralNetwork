@@ -16,10 +16,15 @@ def main(argv):
                                    out_dir=cfg.out_dir(),
                                    level=cfg.log_level())
 
-    (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
+    (_, _), (x_val, y_val), (x_train, y_train) = cango_pboc.get_train_val_test_data(
         path=cfg.train_data(), drop_columns=cfg.drop_columns(),
         train_val_ratio=cfg.train_val_ratio(),
         do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+
+    # (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
+    #     path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+    #     train_val_ratio=cfg.train_val_ratio(),
+    #     do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/epoches.log'.format(log_dir))
@@ -39,26 +44,28 @@ def main(argv):
     mmnn = MultiModelsNeuralNetwork(input_dim)
     mmnn.set_reg_val(cfg.model_reg_val())
     mmnn.set_learning_rate(cfg.model_learning_rate())
-    branch1 = single_model.create_model(input_dim,
-                                        regularization_val=cfg.model_reg_val(),
-                                        dropout_val=cfg.model_dropout_val(),
-                                        learning_rate=cfg.model_learning_rate())
-    mmnn.add_model(branch1)
-    branch2 = single_model.create_model(input_dim,
-                                        regularization_val=0.00001,
-                                        dropout_val=cfg.model_dropout_val(),
-                                        learning_rate=cfg.model_learning_rate())
-    mmnn.add_model(branch2)
+
+    train_array = []
+    val_array = []
+    for i in range(0, 2):
+        branch = single_model.create_model(input_dim,
+                                           regularization_val=cfg.model_reg_val() * (i * 0.1),
+                                           dropout_val=cfg.model_dropout_val(),
+                                           learning_rate=cfg.model_learning_rate())
+        mmnn.add_model(branch)
+        train_array.append(x_train)
+        val_array.append(x_val)
+
     model_nn = mmnn.create_model()
 
     # Train the model
-    history = model_nn.fit([x_train, x_train], y_train,
+    history = model_nn.fit(train_array, y_train,
                            batch_size=cfg.model_train_batch_size(),
                            epochs=cfg.model_train_epoches(),
-                           verbose=0, validation_data=([x_val, x_val], y_val),
+                           verbose=0, validation_data=(val_array, y_val),
                            class_weight=cfg.model_class_weight(),
                            callbacks=[checkpointer, csv_logger, early_stopping])
-    score = model_nn.evaluate([x_val, x_val], y_val, verbose=0)
+    score = model_nn.evaluate(val_array, y_val, verbose=0)
     print('Validation score:', score[0])
     print('Validation accuracy:', score[1])
 

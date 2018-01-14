@@ -106,13 +106,13 @@ def get_train_val_test_data(path=None,
     labels = dat_utils.flat_to_one_hot(labels, categorical=categorical_labels)
     dataset = np.delete(dataset, -1, axis=1)
 
-    # train_dataset, validation_dataset = dat_utils.data_split2(data=dataset, split_ratio=train_val_ratio)
-    # train_labels, validation_labels = dat_utils.data_split2(data=labels, split_ratio=train_val_ratio)
+    train_dataset, validation_dataset = dat_utils.data_split2(data=dataset, split_ratio=train_val_ratio)
+    train_labels, validation_labels = dat_utils.data_split2(data=labels, split_ratio=train_val_ratio)
 
     train_dataset, validation_dataset, test_dataset =\
-        dat_utils.data_split3(data=dataset, ratio1=.6, ratio2=.8)
+        dat_utils.data_split3(data=dataset, ratio1=.745670032, ratio2=.872835016)
     train_labels, validation_labels, test_labels =\
-        dat_utils.data_split3(data=labels, ratio1=.6, ratio2=.8)
+        dat_utils.data_split3(data=labels, ratio1=.745670032, ratio2=.872835016)
 
     log.debug('Training labels distribution: 0 - {}, 1 - {}'.format(
         train_labels.shape[0] - np.count_nonzero(train_labels),

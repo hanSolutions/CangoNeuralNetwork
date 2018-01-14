@@ -24,7 +24,7 @@ def create_model(input_dimension,
                     activity_regularizer=regularizers.l2(regularization_val)))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
-    # model.add(Dropout(dropout_val))
+    model.add(Dropout(dropout_val))
 
     # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(256,
@@ -34,7 +34,7 @@ def create_model(input_dimension,
                     activity_regularizer=regularizers.l2(regularization_val)))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
-    # model.add(Dropout(dropout_val))
+    model.add(Dropout(dropout_val))
 
     # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(128,
@@ -44,7 +44,7 @@ def create_model(input_dimension,
                     activity_regularizer=regularizers.l2(regularization_val)))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
-    # model.add(Dropout(dropout_val))
+    model.add(Dropout(dropout_val))
 
     # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(64,
@@ -54,7 +54,7 @@ def create_model(input_dimension,
                     activity_regularizer=regularizers.l2(regularization_val)))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
-    # model.add(Dropout(dropout_val))
+    model.add(Dropout(dropout_val))
 
     # model.add(GaussianNoise(gaussian_noise_val))
     model.add(Dense(32,
@@ -64,7 +64,7 @@ def create_model(input_dimension,
                     activity_regularizer=regularizers.l2(regularization_val)))
     model.add(BatchNormalization())
     model.add(LeakyReLU())
-    # model.add(Dropout(dropout_val))
+    model.add(Dropout(dropout_val))
 
     model.add(Dense(1, kernel_initializer='normal', activation='sigmoid'))
 

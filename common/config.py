@@ -16,6 +16,9 @@ class YamlParser:
     def test_data(self):
         return self.config[c.CONFIG_SECT_INPUT]['test_dataset']
 
+    def one_filer(self):
+        return self.config[c.CONFIG_SECT_INPUT]['one_filer']
+
     def train_val_ratio(self):
         return float(self.config[c.CONFIG_SECT_INPUT]['train_val_ratio'])
 
@@ -24,6 +27,9 @@ class YamlParser:
 
     def do_smote(self):
         return bool(self.config[c.CONFIG_SECT_INPUT]['do_smote'])
+
+    def column_label(self):
+        return self.config[c.CONFIG_SECT_INPUT]['column_label']
 
     def drop_columns(self):
         return np.asarray(self.config[c.CONFIG_SECT_INPUT]['drop_columns'])

@@ -5,6 +5,8 @@ input:
   train_dataset: ./
   # test data input path
   test_dataset: ./
+  # true if all train/val/test data are loaded from train_dataset
+  one_filer: False
   # train validate split ratio
   train_val_ratio: 0.3
   # If true, shuffle input data
@@ -13,6 +15,8 @@ input:
   do_smote: True
   # SMOTE ratio. Do nothing if do_smote is false
   smote_ratio: 0.5
+  # label column name
+  column_label: 'label'
   # columns to be dropped from the input data
   drop_columns: []
 log:

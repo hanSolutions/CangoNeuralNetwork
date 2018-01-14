@@ -15,10 +15,16 @@ def main(argv):
                                    out_dir=cfg.out_dir(),
                                    level=cfg.log_level())
 
-    (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
-        path=cfg.train_data(), drop_columns=cfg.drop_columns(),
-        train_val_ratio=cfg.train_val_ratio(),
-        do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+    if cfg.one_filer():
+        (x_train, y_train), (x_val, y_val), (_, _) = cango_pboc.get_train_val_test_data(
+            path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+            train_val_ratio=cfg.train_val_ratio(),
+            do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
+    else:
+        (x_train, y_train), (x_val, y_val) = cango_pboc.get_train_val_data(
+            path=cfg.train_data(), drop_columns=cfg.drop_columns(),
+            train_val_ratio=cfg.train_val_ratio(),
+            do_shuffle=cfg.do_shuffle(), do_smote=cfg.do_smote(), smote_ratio=cfg.smote_ratio())
 
     # streams epoch results to a csv file
     csv_logger = ka.callbacks.CSVLogger('{}/epoches.log'.format(log_dir))
